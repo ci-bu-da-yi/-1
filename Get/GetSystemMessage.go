@@ -156,9 +156,11 @@ func NextMessages(ctx context.Context, interval time.Duration) ([]QQMessage, err
 			}
 		}
 		if len(seen) > maxSeenCap { // 如果 seen map 超过容量上限
-			clear(seen)                     // 清空整个 map，释放内存
-			for _, m := range newMessages { // 重新标记本轮新消息
-				seen[m.NotificationID] = true // 防止刚发现的消息被误清后重复推送
+			clear(seen) // 清空整个 map，释放内存
+			for _, line := range lines {
+				if m, ok := parseLine(line); ok {
+					seen[m.NotificationID] = true //标记已经出现过的
+				}
 			}
 		}
 		seenMu.Unlock()

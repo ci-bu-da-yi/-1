@@ -100,7 +100,6 @@ func (a *App) startQQMonitor(userID int64) {
 	if a.monitorCancel != nil {
 		return
 	}
-
 	ctx, cancel := context.WithCancel(a.ctx)
 	a.monitorCancel = cancel
 
