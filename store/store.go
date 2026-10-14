@@ -12,12 +12,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+<<<<<<< HEAD
 var (
 	Users           []User
 	Messages        []Message
 	messageFilePath string
 	usersFilePath   string
 )
+=======
+var usersFilePath string
+var messageFilePath string
+var Users []User
+var Messages []Message
+>>>>>>> 83cf1306976fbcf9c67a385ede62a3b3ea4e1cd8
 
 type User struct {
 	ID       int64  `json:"id"`
@@ -269,8 +276,13 @@ func LoginService(username, password string) (*User, error) {
 func ShowGetMessage(UserID int64, Id int) (string, error) {
 	for _, i := range Messages {
 		if i.UserId == UserID && i.ID == int64(Id) {
+<<<<<<< HEAD
 			return limitRunes(i.Message, 5), nil
 		}
+=======
+		}
+		return limitRunes(i.Message, 5), nil
+>>>>>>> 83cf1306976fbcf9c67a385ede62a3b3ea4e1cd8
 	}
 	return "", errors.New("未找到匹配的消息")
 }

@@ -21,7 +21,10 @@ import (
 var (
 	oneBotMu      sync.Mutex                  //互斥锁
 	oneBotRunning bool                        //记录OneBot是否监听
+<<<<<<< HEAD
 	oneBotDone    chan struct{}               //停止
+=======
+>>>>>>> 83cf1306976fbcf9c67a385ede62a3b3ea4e1cd8
 	oneBotQueue   = make(chan QQMessage, 256) //缓存消息
 	oneBotErrors  = make(chan error, 1)       //缓存连接错误
 )
