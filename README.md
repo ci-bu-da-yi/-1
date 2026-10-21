@@ -2,8 +2,7 @@
 
 ## About
 
-This is the official Wails Vanilla template.
-
+A Wails-based desktop application written in Go that listens to QQ messages and converts them into real-time danmaku (bullet comments). Built with Go, HTML, and JSON.
 You can configure the project by editing `wails.json`. More information about the project settings can be found
 here: https://wails.io/docs/reference/project-config
 
