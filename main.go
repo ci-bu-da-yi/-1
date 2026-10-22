@@ -23,7 +23,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:            "my-project",
+		Title:            "QQ桌面弹幕",
 		Width:            1024,
 		Height:           768,
 		DisableResize:    true,

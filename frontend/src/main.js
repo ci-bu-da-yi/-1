@@ -22,7 +22,6 @@ const state = {
   backgroundMode: false,
   collapsed: false,
   messages: [],
-  toasts: [],
   receivedCount: 0,
 };
 
@@ -143,16 +142,81 @@ function addIncomingMessage(raw) {
   state.messages = state.messages.slice(0, 60);
   state.receivedCount += 1;
   state.monitorError = '';
-
-  const toast = { ...message, toastKey: `toast-${Date.now()}-${Math.random()}` };
-  state.toasts.unshift(toast);
-  state.toasts = state.toasts.slice(0, 4);
   render();
+  launchDanmaku(message);
+}
 
-  window.setTimeout(() => {
-    state.toasts = state.toasts.filter((item) => item.toastKey !== toast.toastKey);
-    render();
-  }, 9000);
+const DANMAKU_SPEED = 118;
+const DANMAKU_GAP = 76;
+const DANMAKU_LANE_HEIGHT = 58;
+let danmakuLanes = [];
+
+function danmakuLaneCount() {
+  const usableHeight = Math.max(1, window.innerHeight - 150);
+  return Math.max(2, Math.min(8, Math.floor(usableHeight / DANMAKU_LANE_HEIGHT)));
+}
+
+function launchDanmaku(message) {
+  const layer = document.querySelector('#danmaku-layer');
+  if (!layer || !state.user) return;
+
+  const item = document.createElement('div');
+  const source = document.createElement('span');
+  const text = document.createElement('span');
+
+  item.className = 'danmaku-item';
+  source.className = 'danmaku-source';
+  text.className = 'danmaku-text';
+  source.textContent = message.title;
+  text.textContent = message.body || '收到一条新通知';
+  item.append(source, text);
+  layer.append(item);
+
+  const laneCount = danmakuLaneCount();
+  if (danmakuLanes.length !== laneCount) {
+    danmakuLanes = Array.from(
+      { length: laneCount },
+      (_, index) => danmakuLanes[index] || 0,
+    );
+  }
+
+  const width = item.getBoundingClientRect().width;
+  const now = performance.now();
+  let lane = danmakuLanes.findIndex((availableAt) => availableAt <= now);
+  if (lane === -1) {
+    lane = danmakuLanes.indexOf(Math.min(...danmakuLanes));
+  }
+
+  const startAt = Math.max(now, danmakuLanes[lane]);
+  const delay = startAt - now;
+  const duration = Math.max(8, (window.innerWidth + width) / DANMAKU_SPEED);
+  const reservedTop = 78;
+
+  item.style.top = `${reservedTop + lane * DANMAKU_LANE_HEIGHT}px`;
+  item.style.animationDelay = `${delay}ms`;
+  item.style.animationDuration = `${duration}s`;
+
+  danmakuLanes[lane] =
+    startAt + ((width + DANMAKU_GAP) / DANMAKU_SPEED) * 1000;
+
+  item.addEventListener(
+    'animationstart',
+    () => {
+      item.classList.add('is-running');
+    },
+    { once: true },
+  );
+  item.addEventListener('animationend', () => item.remove(), { once: true });
+
+  window.setTimeout(
+    () => item.remove(),
+    delay + duration * 1000 + 1000,
+  );
+}
+
+function clearDanmaku() {
+  document.querySelector('#danmaku-layer')?.replaceChildren();
+  danmakuLanes = [];
 }
 
 function installBackendEvents() {
@@ -301,21 +365,6 @@ function messageItemMarkup(message) {
   `;
 }
 
-function toastMarkup(message) {
-  return `
-    <article class="message-toast" data-toast="${escapeHtml(message.toastKey)}">
-      <span class="toast-accent" aria-hidden="true"></span>
-      <div class="toast-body">
-        <div class="toast-meta">
-          <span>${escapeHtml(message.title)}</span>
-          <time>${escapeHtml(timeLabel(message.time))}</time>
-        </div>
-        <p>${escapeHtml(message.body || '收到一条新通知')}</p>
-      </div>
-    </article>
-  `;
-}
-
 function miniPanelMarkup() {
   return `
     <section class="mini-panel" id="control-panel" aria-label="QQ 弹幕控制台">
@@ -414,9 +463,6 @@ function dashboardView() {
           `
       }
 
-      <aside class="toast-stack" aria-live="polite">
-        ${state.toasts.map(toastMarkup).join('')}
-      </aside>
     </main>
   `;
 }
@@ -514,7 +560,6 @@ async function submitAuth() {
       name: result.user?.user || username,
     };
     state.messages = [];
-    state.toasts = [];
     state.receivedCount = 0;
     state.monitorError = '';
     state.collapsed = false;
@@ -537,7 +582,7 @@ async function logout() {
 
   state.user = null;
   state.messages = [];
-  state.toasts = [];
+  clearDanmaku();
   state.receivedCount = 0;
   state.monitorError = '';
   state.collapsed = false;
@@ -609,6 +654,7 @@ root.addEventListener('click', (event) => {
   if (action === 'clear-messages') {
     state.messages = [];
     state.receivedCount = 0;
+    clearDanmaku();
     render();
     return;
   }
@@ -675,9 +721,13 @@ if (previewMode) {
         body: '本周评审改到周四下午三点，请提前准备材料。',
       },
     ];
-    state.toasts = [{ ...state.messages[0], toastKey: 'preview-toast' }];
   }
 }
 
 installBackendEvents();
 render();
+if (previewMode === 'dashboard') {
+  state.messages.slice(0, 3).forEach((message, index) => {
+    window.setTimeout(() => launchDanmaku(message), index * 240);
+  });
+}
